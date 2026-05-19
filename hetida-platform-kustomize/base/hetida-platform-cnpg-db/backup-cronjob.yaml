@@ -1,0 +1,85 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cnpg-backup
+spec:
+  # Run backup daily at 2 AM
+  schedule: '0 2 * * *'
+
+  # Keep last 3 successful jobs
+  successfulJobsHistoryLimit: 3
+
+  # Keep last 1 failed job for debugging
+  failedJobsHistoryLimit: 1
+
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: cnpg-backup
+        spec:
+          serviceAccountName: cnpg-backup
+          containers:
+            - name: backup
+              image: registry.gitlab.com/enterprisedb/cloud-native-postgresql/plugins/pgbackrest:latest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: PGBACKREST_CONFIG_PATH
+                  value: /etc/pgbackrest
+                - name: PGBACKREST_STANZA
+                  value: timescale-db
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  # Trigger a full backup through CloudNativePG API
+                  # This requires kubectl access and proper RBAC
+                  kubectl patch cluster timescale-db --type merge \
+                    -p '{"metadata":{"annotations":{"cnpg.io/backup":"true"}}}'
+
+              volumeMounts:
+                - name: pgbackrest-config
+                  mountPath: /etc/pgbackrest
+
+          volumes:
+            - name: pgbackrest-config
+              configMap:
+                name: pgbackrest-config
+
+          restartPolicy: OnFailure
+
+          backoffLimit: 2
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cnpg-backup
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cnpg-backup
+rules:
+  - apiGroups: ['postgresql.cnpg.io']
+    resources: ['clusters']
+    verbs: ['get', 'patch', 'update']
+    resourceNames: ['timescale-db']
+  - apiGroups: ['postgresql.cnpg.io']
+    resources: ['backups']
+    verbs: ['get', 'list', 'create']
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cnpg-backup
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cnpg-backup
+subjects:
+  - kind: ServiceAccount
+    name: cnpg-backup

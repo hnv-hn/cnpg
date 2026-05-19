@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cnpg-db-alerts
+  namespace: hetida-platform-dev
+spec:
+  groups:
+    - name: postgres_monitoring
+      interval: 30s
+      rules:
+        # Alert: Zu viele Verbindungen
+        - alert: PostgreSQLHighConnectionCount
+          expr: sum(pg_stat_activity{datname="hetida_ts"}) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'PostgreSQL: Hohe Verbindungsanzahl ({{ $value }})'
+            description: 'Datenbankverbindungen über Schwellenwert'
+
+        # Alert: Zu viele Idle Connections
+        - alert: PostgreSQLIdleConnections
+          expr: sum(pg_stat_activity{datname="hetida_ts", state="idle"}) > 50
+          for: 10m
+          labels:
+            severity: info
+          annotations:
+            summary: 'PostgreSQL: Viele Idle-Verbindungen ({{ $value }})'
+
+        # Alert: Deadlocks erkannt
+        - alert: PostgreSQLDeadlocks
+          expr: rate(pg_stat_database_deadlocks{datname="hetida_ts"}[5m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'PostgreSQL: Deadlock erkannt!'
+            description: '{{ $value }} deadlocks pro Minute in hetida_ts'
+
+        # Alert: Cache-Hit-Ratio niedrig
+        - alert: PostgreSQLLowCacheHitRatio
+          expr: |
+            (pg_stat_database_blks_hit{datname="hetida_ts"} / 
+            (pg_stat_database_blks_hit{datname="hetida_ts"} + pg_stat_database_blks_read{datname="hetida_ts"}))
+            < 0.99
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'PostgreSQL: Cache-Hit-Ratio unter 99% ({{ $value | humanizePercentage }})'
+            description: 'Datenbank-Performance könnte beeinträchtigt sein'
+
+        # Alert: Lange laufende Queries
+        - alert: PostgreSQLLongRunningQueries
+          expr: count(pg_stat_activity{datname="hetida_ts", state="active"} > 0) > 5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'PostgreSQL: {{ $value }} aktive Queries'
+            description: 'Zu viele aktive Queries ({{ $value }})'
+
+        # Alert: Hohe CPU-Auslastung
+        - alert: PostgreSQLHighCPUUsage
+          expr: rate(process_cpu_seconds_total{pod=~"timescale-db.*"}[5m]) * 100 > 80
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'PostgreSQL: CPU-Auslastung über 80% ({{ $value | humanize }}%)'
+
+        # Alert: Hohe Memory-Auslastung
+        - alert: PostgreSQLHighMemoryUsage
+          expr: (process_resident_memory_bytes{pod=~"timescale-db.*"} / 2147483648) * 100 > 90
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'PostgreSQL: RAM-Auslastung über 90% ({{ $value | humanize }}%)'

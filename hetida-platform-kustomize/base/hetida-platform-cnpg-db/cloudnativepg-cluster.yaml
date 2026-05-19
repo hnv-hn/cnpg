@@ -1,0 +1,123 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: timescale-db
+spec:
+  # PostgreSQL Version
+  imageName: timescale/timescaledb:2.24.0-pg18
+
+  # Number of instances (Primary + Replicas)
+  instances: 2
+
+  # Minimum expected replicas for HA
+  minSyncReplicas: 1
+
+  # Storage configuration with Longhorn
+  postgresql:
+    parameters:
+      # WAL & Archiving
+      wal_level: replica
+      archive_mode: 'on'
+      # Compressed WAL files
+      wal_compression: 'on'
+      # Number of seconds after which WAL files are recycled
+      wal_recycle: 'on'
+
+      # Replication settings
+      max_wal_senders: 5
+      max_replication_slots: 5
+
+      # TimescaleDB specific
+      # TimescaleDB + monitoring extensions
+      shared_preload_libraries: 'timescaledb,pg_stat_statements'
+
+      # pg_stat_statements tuning
+      pg_stat_statements.track: 'top' # weniger Overhead, zeigt häufige Anfragen
+      pg_stat_statements.max: '10000'
+      log_min_duration_statement: '1000'
+
+      # Memory configuration
+      shared_buffers: '256MB'
+      effective_cache_size: '512MB'
+      work_mem: '64MB'
+      maintenance_work_mem: '128MB'
+
+      # Performance
+      random_page_cost: 1.1
+
+      # Logging
+      log_statement: 'ddl'
+      log_duration: 'off'
+      log_lock_waits: 'on'
+
+  # Storage specification
+  storage:
+    size: 10Gi # TODO: 100Gi für Produktion
+    storageClass: longhorn
+
+  # WAL archiving to Longhorn volume
+  walStorage:
+    size: 10Gi # TODO: 100Gi für Produktion; Proportional zu Datenvolume
+    storageClass: longhorn
+
+  # Bootstrap from existing data (used for recovery/restore)
+  bootstrap:
+    initdb:
+      database: hetida_ts
+      owner: tsadmin
+      secret:
+        name: hetida-platform-secrets
+      encoding: UTF8
+      locale: en_US.UTF-8
+      localeCollate: en_US.UTF-8
+      localeCtype: en_US.UTF-8
+      postInitApplicationSQL:
+        - 'CREATE EXTENSION IF NOT EXISTS timescaledb;'
+        - 'CREATE EXTENSION IF NOT EXISTS pg_stat_statements;'
+
+  # Secrets management
+  superuserSecret:
+    name: hetida-platform-secrets
+
+  # Backup configuration
+  backup:
+    barmanObjectStore:
+      # Using Longhorn volume for local backups
+      wal:
+        compression: gzip
+        maxParallel: 4
+      data:
+        compression: gzip
+        immediateCheckpoint: false
+        jobs: 4
+      destinationPath: /var/lib/pgbackrest
+    retentionPolicy: '30d'
+
+  # Security context
+  securityContext:
+    fsGroup: 26
+    runAsUser: 26
+    runAsGroup: 26
+    runAsNonRoot: true
+
+  # Pod scheduling
+  affinity:
+    podAntiAffinity: preferred
+
+  # Resource constraints
+  resources:
+    requests:
+      memory: 500Mi # TODO: 2Gi für Produktion
+      cpu: 500m
+    limits:
+      memory: 500Mi # TODO: 4Gi für Produktion
+      cpu: 1000m
+
+  # Health checks (managed by CloudNativePG)
+  primaryUpdateStrategy: unsupervised
+
+  # Monitoring
+  monitoring:
+    enabled: true
+    prometheusRule:
+      enabled: true

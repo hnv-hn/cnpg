@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: StorageClass
+metadata:
+  name: longhorn
+provisioner: driver.longhorn.io/longhorn
+allowVolumeExpansion: true
+parameters:
+  numberOfReplicas: '1' # TODO: 2 für Produktion
+  staleReplicaTimeout: '2880' # 2 days
+  fromBackup: ''
+  fsType: ext4
+  mkfsParams: ''
+  migratable: 'false'
+
+  # Performance tuning
+  diskSelector: ''
+  nodeSelector: ''
+
+  # Snapshot settings
+  snapshotDataSource: 'true'
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete

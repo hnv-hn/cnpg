@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: timescale-db-init-sql
+data:
+  01-init-timescaledb.sql: |
+    -- Create TimescaleDB extension
+    CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+
+    -- Create timeseries table (same as original setup)
+    CREATE TABLE IF NOT EXISTS timeseries
+    (
+      metric_Id           uuid not null,
+      layer_id            uuid DEFAULT null,
+      ts_timestamp        timestamptz not null,
+      ts_knowledge_cutoff timestamptz null,
+      ts_created          timestamptz not null,
+      value               float not null,
+      flags               integer not null default 0
+    );
+
+    -- Grant permissions to admin user
+    GRANT SELECT, INSERT, UPDATE, DELETE ON timeseries TO tsadmin;
+
+    -- Convert table to hypertable
+    SELECT create_hypertable('timeseries', 'ts_timestamp', if_not_exists => TRUE);
+
+    -- Create index for query optimization
+    CREATE INDEX idx_timeseries_metric_id_ts_timestamp ON timeseries (metric_id, ts_timestamp DESC);
+
+    -- Enable compression (compress after 21 days)
+    ALTER TABLE timeseries SET (
+      timescaledb.compress,
+      timescaledb.compress_segmentby = 'metric_Id',
+      timescaledb.compress_orderby = 'ts_timestamp desc, ts_knowledge_cutoff desc, ts_created desc'
+    );
+
+    -- Add compression policy (compress data older than 21 days)
+    SELECT add_compression_policy('timeseries', INTERVAL '21 days');
+
+    -- Add retention policy (optional: delete data older than X days)
+    -- SELECT add_retention_policy('timeseries', INTERVAL '90 days');
