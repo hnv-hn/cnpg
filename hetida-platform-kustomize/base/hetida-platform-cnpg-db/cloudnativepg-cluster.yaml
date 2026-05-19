@@ -4,12 +4,13 @@ metadata:
   name: timescale-db
 spec:
   # PostgreSQL Version
-  imageName: timescale/timescaledb:2.24.0-pg18
+  imageName: timescale/timescaledb:2.24.0-pg16
 
   # Number of instances (Primary + Replicas)
   instances: 2
 
   # Minimum expected replicas for HA
+  maxSyncReplicas: 1
   minSyncReplicas: 1
 
   # Storage configuration with Longhorn
@@ -29,7 +30,7 @@ spec:
 
       # TimescaleDB specific
       # TimescaleDB + monitoring extensions
-      shared_preload_libraries: 'timescaledb,pg_stat_statements'
+      # shared_preload_libraries: 'timescaledb,pg_stat_statements'
 
       # pg_stat_statements tuning
       pg_stat_statements.track: 'top' # weniger Overhead, zeigt häufige Anfragen
@@ -80,18 +81,18 @@ spec:
     name: hetida-platform-secrets
 
   # Backup configuration
-  backup:
-    barmanObjectStore:
-      # Using Longhorn volume for local backups
-      wal:
-        compression: gzip
-        maxParallel: 4
-      data:
-        compression: gzip
-        immediateCheckpoint: false
-        jobs: 4
-      destinationPath: /var/lib/pgbackrest
-    retentionPolicy: '30d'
+  # backup:
+  #   barmanObjectStore: # diese Plugin support nur S3-kompatible Backends, und verlangt nach Credentials
+  #     # Using Longhorn volume for local backups
+  #     wal:
+  #       compression: gzip
+  #       maxParallel: 4
+  #     data:
+  #       compression: gzip
+  #       immediateCheckpoint: false
+  #       jobs: 4
+  #     destinationPath: /var/lib/pgbackrest
+  #   retentionPolicy: '30d'
 
   # Security context
   securityContext:
