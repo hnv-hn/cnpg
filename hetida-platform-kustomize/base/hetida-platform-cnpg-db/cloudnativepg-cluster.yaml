@@ -4,7 +4,7 @@ metadata:
   name: timescale-db
 spec:
   # PostgreSQL Version
-  imageName: timescale/timescaledb:2.24.0-pg16
+  imageName: timescale/timescaledb:2.24.0-pg15
 
   # Number of instances (Primary + Replicas)
   instances: 2
@@ -79,20 +79,6 @@ spec:
   # Secrets management
   superuserSecret:
     name: hetida-platform-secrets
-
-  # Backup configuration
-  # backup:
-  #   barmanObjectStore: # diese Plugin support nur S3-kompatible Backends, und verlangt nach Credentials
-  #     # Using Longhorn volume for local backups
-  #     wal:
-  #       compression: gzip
-  #       maxParallel: 4
-  #     data:
-  #       compression: gzip
-  #       immediateCheckpoint: false
-  #       jobs: 4
-  #     destinationPath: /var/lib/pgbackrest
-  #   retentionPolicy: '30d'
 
   # Security context
   securityContext:
