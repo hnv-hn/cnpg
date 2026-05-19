@@ -4,7 +4,7 @@ metadata:
   name: timescale-db
 spec:
   # PostgreSQL Version
-  imageName: timescale/timescaledb:2.24.0-pg14
+  imageName: timescale/timescaledb:2.24.0-pg13
 
   # Number of instances (Primary + Replicas)
   instances: 2
