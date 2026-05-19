@@ -39,7 +39,8 @@
 
   ```bash
   helm install cnpg cnpg/cloudnative-pg \
-    --namespace kube-system \
+    --namespace cnpg-system \
+    --create-namespace \
     --version 0.23.2 \
     --set monitoring.enabled=true
   ```
@@ -86,9 +87,13 @@ Wenn nichts kommt, installieren:
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
-helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-  -n monitoring --create-namespace
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace \
+  --version 60.0.0
 ```
+
+### CNPG CRDs
 
 ## Phase 3: Deployment
 

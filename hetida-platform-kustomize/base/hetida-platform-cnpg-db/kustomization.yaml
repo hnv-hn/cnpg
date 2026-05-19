@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   - cloudnativepg-cluster.yaml
-  # - longhorn-storageclass.yaml
+  - longhorn-storageclass.yaml
   - timescale-init-sql.yaml
   - backup-cronjob.yaml
   - pgbackrest-config.yaml
