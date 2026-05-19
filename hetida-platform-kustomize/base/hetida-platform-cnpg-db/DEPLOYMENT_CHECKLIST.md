@@ -26,6 +26,12 @@
 
 ## Phase 2: Operator Installation
 
+### CRDs installieren
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.24.0.yaml
+```
+
 ### CloudNativePG Operator
 
 - [ ] Helm Repository hinzufügen
