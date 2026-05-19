@@ -63,6 +63,33 @@
   kubectl get storageclass longhorn
   ```
 
+### Prometheus Operator CRDs installieren (falls nicht vorhanden)
+
+Prüfen:
+
+```bash
+kubectl get crd | grep monitoring.coreos.com
+```
+
+Erwarten:
+
+```Code
+prometheusrules.monitoring.coreos.com
+servicemonitors.monitoring.coreos.com
+podmonitors.monitoring.coreos.com
+alertmanagers.monitoring.coreos.com
+```
+
+Wenn nichts kommt, installieren:
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace
+```
+
 ## Phase 3: Deployment
 
 ### CloudNativePG Ressourcen
