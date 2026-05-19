@@ -26,12 +26,6 @@
 
 ## Phase 2: Operator Installation
 
-### CRDs installieren
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.24.0.yaml
-```
-
 ### CloudNativePG Operator
 
 - [ ] Helm Repository hinzufügen
@@ -46,6 +40,7 @@ kubectl apply -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg
   ```bash
   helm install cnpg cnpg/cloudnative-pg \
     --namespace kube-system \
+    --version 0.23.2 \
     --set monitoring.enabled=true
   ```
 
@@ -81,7 +76,7 @@ kubectl apply -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg
 - [ ] Dry-Run durchführen
 
   ```bash
-  kustomize build . | kubectl diff -f - -n hetida-platform-dev
+  kubectl kustomize . | kubectl diff -f - -n hetida-platform-dev
   ```
 
 - [ ] Ressourcen deployen
