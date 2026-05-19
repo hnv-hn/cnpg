@@ -24,8 +24,8 @@ spec:
       wal_recycle: 'on'
 
       # Replication settings
-      max_wal_senders: 5
-      max_replication_slots: 5
+      max_wal_senders: '5'
+      max_replication_slots: '5'
 
       # TimescaleDB specific
       # TimescaleDB + monitoring extensions
@@ -43,7 +43,7 @@ spec:
       maintenance_work_mem: '128MB'
 
       # Performance
-      random_page_cost: 1.1
+      random_page_cost: '1.1'
 
       # Logging
       log_statement: 'ddl'
